@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationRoute, ExplorerProfile, NasaMediaItem } from '../types';
+import { GalaxyHeroCanvas } from '../components/GalaxyHeroCanvas';
 import { HERO_ASSETS } from '../data/cosmicData';
 import {
   Orbit,
@@ -94,15 +95,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, profile }) => {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Space-Themed Backdrop Layer (Replaces Hero Video) */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <img
-          src={HERO_ASSETS.heroSpaceBackdrop}
-          alt="Deep cosmic nebula field backdrop"
-          className="w-full h-full object-cover opacity-50"
-        />
-        <div className="absolute inset-0 hero-overlay" />
-      </div>
+      {/* Animated Real-Time Spiral Galaxy Hero Background */}
+      <GalaxyHeroCanvas />
 
       {/* Main Content Container */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 lg:px-8 py-14 lg:py-22 space-y-20">

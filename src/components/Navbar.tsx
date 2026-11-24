@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavigationRoute, ExplorerProfile } from '../types';
+import { CosmicLogo } from './CosmicLogo';
 import {
   Compass,
   Volume2,
@@ -62,9 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onNavigate('/')}
             className="flex items-center gap-2.5 text-left group shrink-0 cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-lg cosmic-gradient flex items-center justify-center text-white shadow-[0_0_15px_rgba(93,169,255,0.4)] group-hover:scale-105 transition-transform">
-              <Sparkles className="w-4 h-4 fill-white" />
-            </div>
+            <CosmicLogo size={32} />
             <span className="text-xl font-bold font-headline tracking-tight text-white group-hover:text-[#5DA9FF] transition-colors whitespace-nowrap">
               Quantum Nest
             </span>

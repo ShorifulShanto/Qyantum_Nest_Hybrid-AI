@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavigationRoute, ExplorerProfile } from '../types';
 import { HERO_ASSETS } from '../data/cosmicData';
 import { BackButton } from '../components/BackButton';
+import { CosmicLogo } from '../components/CosmicLogo';
 import {
   Sparkles,
   KeyRound,
@@ -80,8 +81,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       {/* Login Card */}
       <div className="w-full max-w-md relative z-30 rounded-3xl glass-card border border-white/15 p-8 lg:p-10 shadow-2xl space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 cosmic-gradient rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-[0_0_25px_rgba(93,169,255,0.4)]">
-            <Sparkles className="w-7 h-7 text-white" />
+          <div className="flex justify-center mb-3">
+            <CosmicLogo size={48} />
           </div>
           <h2 className="text-2xl font-bold font-headline text-white">
             {isReset

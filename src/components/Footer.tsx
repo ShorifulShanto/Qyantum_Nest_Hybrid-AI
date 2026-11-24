@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavigationRoute } from '../types';
-import { Sparkles } from 'lucide-react';
+import { CosmicLogo } from './CosmicLogo';
 
 interface FooterProps {
   onNavigate: (route: NavigationRoute) => void;
@@ -15,9 +15,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded cosmic-gradient flex items-center justify-center text-white">
-                <Sparkles className="w-3.5 h-3.5 fill-white" />
-              </div>
+              <CosmicLogo size={24} />
               <span className="font-headline font-bold text-lg text-white">Quantum Nest</span>
               <span className="text-white/30">·</span>
               <span className="text-xs font-mono uppercase tracking-widest text-[#5DA9FF]">

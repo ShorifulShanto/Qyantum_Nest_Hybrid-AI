@@ -1,14 +1,14 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider, type AppCheck } from 'firebase/app-check';
 
-// Enable App Check debug token only in local development
-if (import.meta.env.DEV) {
-  if (typeof window !== 'undefined') {
-    (window as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: boolean | string }).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-  }
-  if (typeof self !== 'undefined') {
-    (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: boolean | string }).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-  }
+// Enable App Check debug token for development and preview
+if (typeof window !== 'undefined') {
+  (window as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: string }).FIREBASE_APPCHECK_DEBUG_TOKEN =
+    'E7E155FE-85F9-4A6E-9EBD-9EC85958BBA0';
+}
+if (typeof self !== 'undefined') {
+  (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: string }).FIREBASE_APPCHECK_DEBUG_TOKEN =
+    'E7E155FE-85F9-4A6E-9EBD-9EC85958BBA0';
 }
 
 const firebaseConfig = {

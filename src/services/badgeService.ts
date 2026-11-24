@@ -1,0 +1,125 @@
+import { AchievementBadge, ExplorerProfile, JournalEntry } from '../types';
+
+export function calculateBadges(
+  profile: ExplorerProfile,
+  journalEntries: JournalEntry[] = []
+): AchievementBadge[] {
+  const missions = profile.missionsLaunched || 0;
+  const bookmarks = profile.bookmarkedIds ? profile.bookmarkedIds.length : 0;
+  const journalCount = journalEntries.length;
+
+  const badges: AchievementBadge[] = [
+    {
+      id: 'first-orbit',
+      title: 'First Orbit',
+      description: 'Initiate your maiden mission into the cosmic archives.',
+      iconName: 'orbit',
+      category: 'missions',
+      tier: 'bronze',
+      currentValue: Math.min(1, missions),
+      targetValue: 1,
+      isUnlocked: missions >= 1,
+    },
+    {
+      id: 'light-traveler',
+      title: 'Light Traveler',
+      description: 'Launch 10 missions across solar system and deep space archives.',
+      iconName: 'zap',
+      category: 'missions',
+      tier: 'silver',
+      currentValue: Math.min(10, missions),
+      targetValue: 10,
+      isUnlocked: missions >= 10,
+    },
+    {
+      id: 'deep-space-veteran',
+      title: 'Deep Space Veteran',
+      description: 'Attain expedition maturity by launching 25 planetary missions.',
+      iconName: 'award',
+      category: 'missions',
+      tier: 'gold',
+      currentValue: Math.min(25, missions),
+      targetValue: 25,
+      isUnlocked: missions >= 25,
+    },
+    {
+      id: 'archival-pioneer',
+      title: 'Archival Pioneer',
+      description: 'Save your first celestial body, exoplanet, or audio artifact.',
+      iconName: 'bookmark',
+      category: 'bookmarks',
+      tier: 'bronze',
+      currentValue: Math.min(1, bookmarks),
+      targetValue: 1,
+      isUnlocked: bookmarks >= 1,
+    },
+    {
+      id: 'deep-space-scout',
+      title: 'Deep Space Scout',
+      description: 'Pin 5 celestial archives into your personal observatory database.',
+      iconName: 'compass',
+      category: 'bookmarks',
+      tier: 'silver',
+      currentValue: Math.min(5, bookmarks),
+      targetValue: 5,
+      isUnlocked: bookmarks >= 5,
+    },
+    {
+      id: 'grand-astrogator',
+      title: 'Grand Astrogator',
+      description: 'Curate 10 celestial records across planetary and stellar libraries.',
+      iconName: 'sparkles',
+      category: 'bookmarks',
+      tier: 'gold',
+      currentValue: Math.min(10, bookmarks),
+      targetValue: 10,
+      isUnlocked: bookmarks >= 10,
+    },
+    {
+      id: 'cosmic-chronicler',
+      title: 'Cosmic Chronicler',
+      description: 'Pen your maiden reflection in the Cosmic Journal research log.',
+      iconName: 'book',
+      category: 'journal',
+      tier: 'bronze',
+      currentValue: Math.min(1, journalCount),
+      targetValue: 1,
+      isUnlocked: journalCount >= 1,
+    },
+    {
+      id: 'archival-historian',
+      title: 'Archival Historian',
+      description: 'Document 5 observational entries in the Cosmic Journal.',
+      iconName: 'book',
+      category: 'journal',
+      tier: 'gold',
+      currentValue: Math.min(5, journalCount),
+      targetValue: 5,
+      isUnlocked: journalCount >= 5,
+    },
+    {
+      id: 'harmonic-observer',
+      title: 'Harmonic Observer',
+      description: 'Listen to deep-space radio emissions and sonic waveforms.',
+      iconName: 'radio',
+      category: 'audio',
+      tier: 'silver',
+      currentValue: Math.min(1, profile.listeningTimeMinutes > 0 ? 1 : 0),
+      targetValue: 1,
+      isUnlocked: profile.listeningTimeMinutes > 0 || missions >= 4,
+    },
+    {
+      id: 'terrestrial-sentinel',
+      title: 'Terrestrial Sentinel',
+      description: 'Engage comprehensive planetary health and Goldilocks analysis.',
+      iconName: 'globe',
+      category: 'exploration',
+      tier: 'silver',
+      currentValue: Math.min(1, missions >= 3 ? 1 : 0),
+      targetValue: 1,
+      isUnlocked: missions >= 3,
+    },
+  ];
+
+  return badges;
+}

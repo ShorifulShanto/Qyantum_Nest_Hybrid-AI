@@ -1,0 +1,114 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-headline: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --background: #050816;
+    --foreground: #F8FAFC;
+    --card: #0B1026;
+    --card-foreground: #F8FAFC;
+    --primary: #5DA9FF;
+    --primary-foreground: #050816;
+    --accent: #8B5CF6;
+    --accent-foreground: #F8FAFC;
+    --muted: #1E293B;
+    --muted-foreground: #94A3B8;
+    --border: rgba(255, 255, 255, 0.08);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #050816;
+    color: #F8FAFC;
+  }
+
+  h1, h2, h3, .font-headline {
+    font-family: var(--font-headline);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Glassmorphism & Cosmic Surfaces */
+.glass-card {
+  background: rgba(11, 16, 38, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card-interactive {
+  background: rgba(11, 16, 38, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-interactive:hover {
+  background: rgba(15, 23, 52, 0.82);
+  border-color: rgba(93, 169, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 0 25px rgba(93, 169, 255, 0.12);
+}
+
+.glass-nav {
+  background: rgba(5, 8, 22, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cosmic-gradient {
+  background: linear-gradient(135deg, #5DA9FF 0%, #8B5CF6 100%);
+}
+
+.cosmic-gradient-text {
+  background: linear-gradient(135deg, #5DA9FF 0%, #A78BFA 60%, #E0E7FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-overlay {
+  background: radial-gradient(circle at 50% 30%, rgba(93, 169, 255, 0.15) 0%, transparent 60%),
+              linear-gradient(180deg, rgba(5, 8, 22, 0.3) 0%, rgba(5, 8, 22, 0.85) 60%, #050816 100%);
+}
+
+.glow-primary {
+  box-shadow: 0 0 50px rgba(93, 169, 255, 0.25);
+}
+
+.glow-accent {
+  box-shadow: 0 0 50px rgba(139, 92, 246, 0.25);
+}
+
+/* Subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050816;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Tabular figures for telemetry */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

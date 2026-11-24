@@ -1,0 +1,7 @@
+{
+  "name": "Quantum Nest",
+  "description": "A calm, intelligent gateway to the universe. Explore deep space archives, planetary libraries, authentic NASA sonifications, and cosmic intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

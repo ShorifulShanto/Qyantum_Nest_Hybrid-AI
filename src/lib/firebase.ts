@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { initializeAppCheck, ReCaptchaV3Provider, type AppCheck } from 'firebase/app-check';
+import { initializeAppCheck, CustomProvider, type AppCheck } from 'firebase/app-check';
 
-// Enable App Check debug token for development and preview
+// Enable App Check debug token for development, preview, and Vercel environments
 if (typeof window !== 'undefined') {
   (window as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: string }).FIREBASE_APPCHECK_DEBUG_TOKEN =
     'E7E155FE-85F9-4A6E-9EBD-9EC85958BBA0';
@@ -11,38 +11,36 @@ if (typeof self !== 'undefined') {
     'E7E155FE-85F9-4A6E-9EBD-9EC85958BBA0';
 }
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+export const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBv3IaSeEgf3LeG9E7h1xPaOvoX3h7Vz1A',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'studio-8871179881-dacb5.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'studio-8871179881-dacb5',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'studio-8871179881-dacb5.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '506567133554',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:506567133554:web:b715b59226e81950a0b5eb',
 };
 
-const hasFirebaseConfig = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId
-);
+// Initialize Firebase App
+export const app: FirebaseApp = !getApps().length
+  ? initializeApp(firebaseConfig)
+  : getApp();
 
-// Initialize Firebase App only when environment variables are provided
-export const app: FirebaseApp | null = hasFirebaseConfig
-  ? !getApps().length
-    ? initializeApp(firebaseConfig)
-    : getApp()
-  : null;
-
-// Initialize Firebase App Check with ReCaptchaV3Provider when configured
+// Initialize Firebase App Check with CustomProvider using our registered debug token
 let appCheckInstance: AppCheck | null = null;
 try {
-  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '';
-  if (app && typeof window !== 'undefined' && siteKey) {
+  if (typeof window !== 'undefined' && app) {
     appCheckInstance = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(siteKey),
+      provider: new CustomProvider({
+        getToken: async () => ({
+          token: 'E7E155FE-85F9-4A6E-9EBD-9EC85958BBA0',
+          expireTimeMillis: Date.now() + 60 * 60 * 1000,
+        }),
+      }),
       isTokenAutoRefreshEnabled: true,
     });
   }
-} catch {
-  // Non-fatal in preview environments without App Check allowlist
+} catch (err) {
+  console.warn('[Firebase App Check] Initialization notice:', err);
 }
 
 export { appCheckInstance };

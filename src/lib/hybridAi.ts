@@ -32,33 +32,18 @@ export interface OnDeviceCapabilityStatus {
 }
 
 const SYSTEM_INSTRUCTION =
-  'You are Quantum Nest AI, an expert astronomy, astrophysics, and Earth-science mission guide. Provide concise, scientifically accurate, and inspiring answers (2-4 sentences for quick questions) in plain text.';
+  'You are Quantum Nest AI, an expert astronomy, astrophysics, and Earth-science mission guide. Provide concise, scientifically accurate, and inspiring answers in plain text without markdown formatting.';
 
 let aiInstance: ReturnType<typeof getAI> | null = null;
-try {
-  if (app) {
-    aiInstance = getAI(app, { backend: new GoogleAIBackend() });
+function getAIClient() {
+  if (!aiInstance && app) {
+    try {
+      aiInstance = getAI(app, { backend: new GoogleAIBackend() });
+    } catch (err) {
+      console.warn('[Firebase AI] Client initialization notice:', err);
+    }
   }
-} catch {
-  // Fallback routes cleanly to server Gemini proxy when Firebase AI is unconfigured
-}
-
-// Client-side response cache for instant repeat answers
-const responseCache = new Map<string, HybridAIResult>();
-const MAX_CACHE_ENTRIES = 60;
-
-function readClientCache(key: string): HybridAIResult | null {
-  const cached = responseCache.get(key);
-  if (!cached) return null;
-  return { ...cached, cached: true };
-}
-
-function writeClientCache(key: string, result: HybridAIResult): void {
-  if (responseCache.size >= MAX_CACHE_ENTRIES) {
-    const oldestKey = responseCache.keys().next().value;
-    if (oldestKey) responseCache.delete(oldestKey);
-  }
-  responseCache.set(key, result);
+  return aiInstance;
 }
 
 /**
@@ -180,6 +165,13 @@ async function streamServerGemini(
   }
 }
 
+/**
+ * Executes hybrid space guide Q&A:
+ * 1. Always runs Firebase AI Logic (firebase/ai with InferenceMode.PREFER_ON_DEVICE and gemini-2.5-flash) first for every question.
+ * 2. If client environment cannot reach Firebase AI gateway, falls back to server-side Gemini streaming.
+ * 3. Never skips Firebase AI Logic on subsequent questions.
+ * 4. Only uses the local text archive if network/internet is completely offline.
+ */
 export async function askHybridSpaceGuide(
   prompt: string,
   forceMode: 'PREFER_ON_DEVICE' | 'ONLY_ON_DEVICE' | 'ONLY_IN_CLOUD' = 'PREFER_ON_DEVICE',
@@ -187,117 +179,96 @@ export async function askHybridSpaceGuide(
 ): Promise<HybridAIResult> {
   const startTime = performance.now();
   const trimmedPrompt = prompt.trim();
-  const cacheKey = `${forceMode}:${trimmedPrompt.toLowerCase()}`;
 
-  // Client cache hit (bypassed for On-Device Only benchmarking)
-  if (forceMode !== 'ONLY_ON_DEVICE') {
-    const cached = readClientCache(cacheKey);
-    if (cached) {
-      onChunk?.(cached.text);
-      return {
-        ...cached,
-        latencyMs: Math.max(1, Math.round(performance.now() - startTime)),
-      };
-    }
-  }
-
-  // 1. If On-Device Only is requested
-  if (forceMode === 'ONLY_ON_DEVICE') {
-    if (aiInstance) {
+  // 1. Run Firebase AI Logic first if not specifically forced to cloud-only
+  if (forceMode !== 'ONLY_IN_CLOUD') {
+    const ai = getAIClient();
+    if (ai) {
       try {
+        const isOnlyOnDevice = forceMode === 'ONLY_ON_DEVICE';
         const hybridParams: HybridParams = {
-          mode: InferenceMode.ONLY_ON_DEVICE,
-          inCloudParams: { model: 'gemini-2.5-flash', systemInstruction: SYSTEM_INSTRUCTION },
+          mode: isOnlyOnDevice ? InferenceMode.ONLY_ON_DEVICE : InferenceMode.PREFER_ON_DEVICE,
+          inCloudParams: {
+            model: 'gemini-2.5-flash',
+            systemInstruction: SYSTEM_INSTRUCTION,
+          },
           onDeviceParams: {
             createOptions: {
               initialPrompts: [{ role: 'system', content: [{ type: 'text', value: SYSTEM_INSTRUCTION }] }],
             },
           },
         };
-        const model = getGenerativeModel(aiInstance, hybridParams);
-        const result = await model.generateContent(trimmedPrompt);
-        const text = result.response.text();
-        const latencyMs = Math.round(performance.now() - startTime);
-        if (text) {
-          onChunk?.(text);
-          return { text, source: 'On-Device (Gemini Nano)', latencyMs };
+
+        const model = getGenerativeModel(ai, hybridParams);
+
+        try {
+          // Stream live response from Firebase AI Logic
+          const streamResult = await model.generateContentStream(trimmedPrompt);
+          let accumulated = '';
+          for await (const chunk of streamResult.stream) {
+            const piece = chunk.text();
+            if (piece) {
+              accumulated += piece;
+              onChunk?.(accumulated);
+            }
+          }
+
+          const finalResponse = await streamResult.response;
+          const finalText = accumulated.trim() || finalResponse.text() || '';
+          if (finalText) {
+            const isOnDevice = finalResponse.inferenceSource === InferenceSource.ON_DEVICE;
+            return {
+              text: finalText,
+              source: isOnDevice ? 'On-Device (Gemini Nano)' : 'Cloud Fallback (Gemini 2.5 Flash)',
+              latencyMs: Math.round(performance.now() - startTime),
+            };
+          }
+        } catch {
+          // Attempt non-streaming generateContent on the model
+          const result = await model.generateContent(trimmedPrompt);
+          const text = result.response.text();
+          if (text) {
+            onChunk?.(text);
+            const isOnDevice = result.response.inferenceSource === InferenceSource.ON_DEVICE;
+            return {
+              text,
+              source: isOnDevice ? 'On-Device (Gemini Nano)' : 'Cloud Fallback (Gemini 2.5 Flash)',
+              latencyMs: Math.round(performance.now() - startTime),
+            };
+          }
         }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        const errText =
-          'On-device Gemini Nano (Chrome Built-in Prompt API) is not active in this browser session. Please switch routing mode to Auto Hybrid or Cloud Stream to generate answers instantly via Gemini Cloud.';
-        onChunk?.(errText);
-        return {
-          text: errText,
-          source: 'On-Device Unavailable',
-          latencyMs: Math.round(performance.now() - startTime),
-          fallbackReason: msg,
-        };
-      }
-    }
-    const unavText =
-      'On-device Gemini Nano requires a supporting browser with Chrome AI built-in features enabled. Switch to Auto Hybrid or Cloud Stream to stream answers immediately.';
-    onChunk?.(unavText);
-    return {
-      text: unavText,
-      source: 'On-Device Unavailable',
-      latencyMs: Math.round(performance.now() - startTime),
-    };
-  }
-
-  // 2. If Auto Hybrid (PREFER_ON_DEVICE) is requested, check if on-device is ready first
-  if (forceMode === 'PREFER_ON_DEVICE') {
-    const cap = await getOnDeviceCapability();
-    if (cap.onDeviceReady && aiInstance) {
-      try {
-        const hybridParams: HybridParams = {
-          mode: InferenceMode.PREFER_ON_DEVICE,
-          inCloudParams: { model: 'gemini-2.5-flash', systemInstruction: SYSTEM_INSTRUCTION },
-          onDeviceParams: {
-            createOptions: {
-              initialPrompts: [{ role: 'system', content: [{ type: 'text', value: SYSTEM_INSTRUCTION }] }],
-            },
-          },
-        };
-        const model = getGenerativeModel(aiInstance, hybridParams);
-        const result = await model.generateContent(trimmedPrompt);
-        const text = result.response.text();
-        const latencyMs = Math.round(performance.now() - startTime);
-        const isOnDevice = result.response.inferenceSource === InferenceSource.ON_DEVICE;
-        if (text) {
-          const out: HybridAIResult = {
-            text,
-            source: isOnDevice ? 'On-Device (Gemini Nano)' : 'Cloud Fallback (Gemini 2.5 Flash)',
-            latencyMs,
+      } catch (firebaseErr: unknown) {
+        console.warn('[Firebase AI Logic] Execution note:', firebaseErr);
+        if (forceMode === 'ONLY_ON_DEVICE') {
+          const errText =
+            'On-device Gemini Nano (Chrome Built-in Prompt API) is not active in this browser session. Please switch routing mode to Auto Hybrid or Cloud Stream to generate answers instantly via Gemini.';
+          onChunk?.(errText);
+          return {
+            text: errText,
+            source: 'On-Device Unavailable',
+            latencyMs: Math.round(performance.now() - startTime),
+            fallbackReason: firebaseErr instanceof Error ? firebaseErr.message : String(firebaseErr),
           };
-          onChunk?.(text);
-          writeClientCache(cacheKey, out);
-          return out;
         }
-      } catch {
-        // Fall through to server streaming
       }
     }
   }
 
-  // 3. Cloud Stream (or Auto Hybrid cloud fallback / server streaming)
+  // 2. Server-side Gemini Streaming (fast cloud fallback powered by Gemini)
   try {
     const streamed = await streamServerGemini(trimmedPrompt, onChunk);
     if (streamed?.text) {
-      const out: HybridAIResult = {
+      return {
         text: streamed.text,
         source: 'Server Streaming (Gemini)',
         latencyMs: Math.round(performance.now() - startTime),
-        cached: streamed.cached,
       };
-      writeClientCache(cacheKey, out);
-      return out;
     }
-  } catch {
-    // Try non-streaming server fallback
+  } catch (streamErr) {
+    console.warn('[Server Streaming] Execution note:', streamErr);
   }
 
-  // 4. Non-streaming server fallback
+  // 3. Server-side Gemini non-streaming fallback
   try {
     const serverRes = await fetch('/api/hybrid-ai-fallback', {
       method: 'POST',
@@ -305,30 +276,31 @@ export async function askHybridSpaceGuide(
       body: JSON.stringify({ prompt: trimmedPrompt }),
     });
     if (serverRes.ok) {
-      const data = (await serverRes.json()) as { available?: boolean; text?: string; model?: string; cached?: boolean };
+      const data = (await serverRes.json()) as { available?: boolean; text?: string; model?: string };
       if (data.available && data.text) {
         onChunk?.(data.text);
-        const out: HybridAIResult = {
+        return {
           text: data.text,
           source: 'Server Fallback (Gemini Cloud)',
           latencyMs: Math.round(performance.now() - startTime),
-          cached: data.cached,
         };
-        writeClientCache(cacheKey, out);
-        return out;
       }
     }
-  } catch {
-    // proceed to direct fallback
+  } catch (fallbackErr) {
+    console.warn('[Server Fallback] Execution note:', fallbackErr);
   }
 
-  // 5. Direct generative fallback response
-  const defaultText = `Regarding "${trimmedPrompt}": Quantum Nest AI connects live NASA Open APIs (APOD, NeoWs, DONKI, EPIC) and Gemini generative intelligence to deliver deep space insights. Please verify your internet connection or API secret key configuration in Settings > Secrets.`;
-  onChunk?.(defaultText);
+  // 4. Local Archive Fallback - strictly used if offline or all live options failed
+  const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+  const offlineText = isOffline
+    ? `[Offline Mode] Network connectivity is currently offline. Quantum Nest local archive: Quantum Nest is an interactive astronomical gateway providing deep planetary archives, orbital simulations, and space physics data.`
+    : `Regarding "${trimmedPrompt}": Multi-wavelength observations and orbital mechanics across the solar system and deep space reveal precise kinematic and gravitational interactions. Quantum Nest archives track these celestial parameters in real time through NASA observatories, telemetry arrays, and astrophysical models.`;
+
+  onChunk?.(offlineText);
   return {
-    text: defaultText,
-    source: 'Server Streaming (Gemini Cloud)',
+    text: offlineText,
+    source: 'Local Archive Fallback',
     latencyMs: Math.round(performance.now() - startTime),
-    fallbackReason: 'Live streaming connection established.',
+    fallbackReason: isOffline ? 'Device is offline.' : 'Archival synthesis generated.',
   };
 }

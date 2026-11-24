@@ -427,7 +427,7 @@ async function callServerGemini(
         contents: prompt,
         config: {
           systemInstruction,
-          abortSignal: AbortSignal.timeout(4500),
+          abortSignal: AbortSignal.timeout(12000),
           ...(model === 'gemini-4-hydrogen'
             ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
             : {}),
@@ -478,7 +478,7 @@ app.post('/api/hybrid-ai-stream', async (req, res) => {
         contents: prompt,
         config: {
           systemInstruction: GEMINI_GUIDE_INSTRUCTION,
-          abortSignal: AbortSignal.timeout(4500),
+          abortSignal: AbortSignal.timeout(12000),
           ...(model === 'gemini-4-hydrogen'
             ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
             : {}),

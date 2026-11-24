@@ -291,7 +291,7 @@ export async function askHybridSpaceGuide(
         msg.includes('403') ||
         msg.toLowerCase().includes('permission')
       ) {
-        firebaseCloudBlockedInSession = true;
+        firebaseCloudBlockedInSession = false;
       }
 
       // Respect strict ONLY_ON_DEVICE mode so demos clearly show when Chrome Gemini Nano is absent

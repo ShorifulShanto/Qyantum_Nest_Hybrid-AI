@@ -446,7 +446,12 @@ function getServerGenAI(): GoogleGenAI | null {
   return cachedGenAiClient;
 }
 
-const FAST_MODELS = ['gemini-3.1-flash-lite', 'gemini-4-hydrogen'] as const;
+const FAST_MODELS = [
+  'gemini-flash-lite-latest',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-4-hydrogen',
+] as const;
 
 async function callServerGemini(
   prompt: string,

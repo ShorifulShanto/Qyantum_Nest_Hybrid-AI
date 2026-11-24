@@ -165,6 +165,57 @@ async function streamServerGemini(
   }
 }
 
+async function askDirectGemini(
+  prompt: string,
+  onChunk?: (partialText: string) => void
+): Promise<{ text: string; model: string } | null> {
+  const apiKey =
+    (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '') ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    '';
+
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') return null;
+
+  const candidateModels = [
+    'gemini-flash-lite-latest',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-3.8-flash',
+  ];
+
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${SYSTEM_INSTRUCTION}\n\nQuestion: ${prompt}` }],
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!res.ok) continue;
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && text.trim()) {
+        const cleaned = text.trim();
+        onChunk?.(cleaned);
+        return { text: cleaned, model };
+      }
+    } catch {
+      // try next candidate model
+    }
+  }
+
+  return null;
+}
+
 /**
  * Executes hybrid space guide Q&A:
  * 1. Always runs Firebase AI Logic (firebase/ai with InferenceMode.PREFER_ON_DEVICE and gemini-2.5-flash) first for every question.
@@ -290,17 +341,31 @@ export async function askHybridSpaceGuide(
     console.warn('[Server Fallback] Execution note:', fallbackErr);
   }
 
-  // 4. Local Archive Fallback - strictly used if offline or all live options failed
+  // 4. Direct Client-side Gemini fallback (works everywhere, including static Vercel hosting)
+  try {
+    const directResult = await askDirectGemini(trimmedPrompt, onChunk);
+    if (directResult?.text) {
+      return {
+        text: directResult.text,
+        source: 'Cloud Fallback (Gemini 2.5 Flash)',
+        latencyMs: Math.round(performance.now() - startTime),
+      };
+    }
+  } catch (directErr) {
+    console.warn('[Direct Gemini Client] Execution note:', directErr);
+  }
+
+  // 5. Offline fallback - strictly used if network is offline or all live options failed
   const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
   const offlineText = isOffline
-    ? `[Offline Mode] Network connectivity is currently offline. Quantum Nest local archive: Quantum Nest is an interactive astronomical gateway providing deep planetary archives, orbital simulations, and space physics data.`
-    : `Regarding "${trimmedPrompt}": Multi-wavelength observations and orbital mechanics across the solar system and deep space reveal precise kinematic and gravitational interactions. Quantum Nest archives track these celestial parameters in real time through NASA observatories, telemetry arrays, and astrophysical models.`;
+    ? '[Offline Mode] Your device appears to be offline. Please verify network connectivity to explore real-time Gemini AI insights.'
+    : 'Quantum Nest was unable to reach the AI services. Please verify your internet connection or API keys and try again.';
 
   onChunk?.(offlineText);
   return {
     text: offlineText,
     source: 'Local Archive Fallback',
     latencyMs: Math.round(performance.now() - startTime),
-    fallbackReason: isOffline ? 'Device is offline.' : 'Archival synthesis generated.',
+    fallbackReason: isOffline ? 'Device is offline.' : 'AI network timeout.',
   };
 }

@@ -1,29 +1,48 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBv3IaSeEgf3LeG9E7h1xPaOvoX3h7Vz1A",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "studio-8871179881-dacb5.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "studio-8871179881-dacb5",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "studio-8871179881-dacb5.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "506567133554",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:506567133554:web:b715b59226e81950a0b5eb",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
 };
 
-export const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const hasFirebaseConfig = Boolean(
+  firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId
+);
 
-if (typeof window !== 'undefined') {
-  (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = 'E7E155FE-85F9-4A6E-9EBD-9EC85958BBA0';
-  try {
-    initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider('6LddHC0uAAAAADU33ihCKdtetmiycOTxdQV7JVyK'),
-      isTokenAutoRefreshEnabled: true,
-    });
-  } catch (e) {
-    console.warn('App Check init notice:', e);
+export const app: FirebaseApp | null = hasFirebaseConfig
+  ? getApps().length
+    ? getApps()[0]
+    : initializeApp(firebaseConfig)
+  : null;
+
+export const auth: Auth | null = app ? getAuth(app) : null;
+export const db: Firestore | null = app ? getFirestore(app) : null;
+
+if (typeof window !== 'undefined' && app) {
+  const debugToken = import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN;
+  if (debugToken) {
+    (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
+      debugToken === 'true' ? true : debugToken;
+  } else if (import.meta.env.DEV) {
+    (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '';
+  if (siteKey) {
+    try {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaEnterpriseProvider(siteKey),
+        isTokenAutoRefreshEnabled: true,
+      });
+    } catch (e) {
+      console.warn('App Check init notice:', e);
+    }
   }
 }

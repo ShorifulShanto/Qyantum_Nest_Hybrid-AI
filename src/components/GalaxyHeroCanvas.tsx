@@ -10,6 +10,15 @@ interface GalaxyParticle {
   alpha: number;
 }
 
+interface TwinkleStar {
+  x: number;
+  y: number;
+  size: number;
+  alpha: number;
+  twinkleSpeed: number;
+  twinkleOffset: number;
+}
+
 export const GalaxyHeroCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -21,6 +30,7 @@ export const GalaxyHeroCanvas: React.FC = () => {
 
     let animId: number;
     let rotation = 0;
+    let time = 0;
 
     const handleResize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -32,22 +42,47 @@ export const GalaxyHeroCanvas: React.FC = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    const particleCount = 700;
+    // Create Milky Way spiral particles
+    const particleCount = 1200;
     const particles: GalaxyParticle[] = [];
-    const colors = ['#38BDF8', '#8B5CF6', '#F472B6', '#E0E7FF', '#FBBF24', '#FFFFFF'];
+    const colors = [
+      '#38BDF8', // Cyan
+      '#818CF8', // Indigo
+      '#C084FC', // Purple
+      '#F472B6', // Pink
+      '#FBBF24', // Gold
+      '#FFFFFF', // White
+    ];
 
     for (let i = 0; i < particleCount; i++) {
-      const radius = Math.random() * 320 + 5;
-      const arm = Math.floor(Math.random() * 2) * Math.PI; // 2 spiral arms
+      const radius = Math.random() * 450 + 10;
+      // 4 distinct spiral arms
+      const armIndex = Math.floor(Math.random() * 4);
+      const arm = (armIndex * Math.PI * 2) / 4;
       const angle = Math.random() * Math.PI * 2;
+      
       particles.push({
         angle,
         radius,
         arm,
-        size: Math.random() * 1.8 + 0.4,
-        speed: (1 / (radius + 20)) * 14,
+        size: Math.random() * 2.2 + 0.5,
+        speed: (1 / (radius + 30)) * 18,
         color: colors[Math.floor(Math.random() * colors.length)],
-        alpha: Math.random() * 0.7 + 0.3,
+        alpha: Math.random() * 0.8 + 0.2,
+      });
+    }
+
+    // Create background twinkling stars
+    const starCount = 200;
+    const backgroundStars: TwinkleStar[] = [];
+    for (let i = 0; i < starCount; i++) {
+      backgroundStars.push({
+        x: Math.random(),
+        y: Math.random(),
+        size: Math.random() * 1.5 + 0.3,
+        alpha: Math.random(),
+        twinkleSpeed: Math.random() * 0.03 + 0.01,
+        twinkleOffset: Math.random() * Math.PI * 2,
       });
     }
 
@@ -60,35 +95,63 @@ export const GalaxyHeroCanvas: React.FC = () => {
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
 
-      rotation += 0.0018;
+      time += 0.015;
+      rotation += 0.0012;
 
-      const centerX = w * 0.65;
-      const centerY = h * 0.5;
+      const centerX = w * 0.68;
+      const centerY = h * 0.52;
 
-      // Galaxy core glow
-      const coreGrad = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, 140);
-      coreGrad.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
-      coreGrad.addColorStop(0.3, 'rgba(139, 92, 246, 0.25)');
-      coreGrad.addColorStop(1, 'rgba(5, 8, 22, 0)');
-      ctx.fillStyle = coreGrad;
+      // Render background twinkling starfield
+      for (const s of backgroundStars) {
+        const currentAlpha = 0.2 + 0.8 * Math.abs(Math.sin(time * s.twinkleSpeed * 20 + s.twinkleOffset));
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = currentAlpha * 0.6;
+        ctx.beginPath();
+        ctx.arc(s.x * w, s.y * h, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Pulsing Milky Way core calculation
+      const pulseFactor = 1 + Math.sin(time * 1.5) * 0.12;
+      const coreRadius = 160 * pulseFactor;
+
+      // Multi-layer volumetric core gradients
+      const outerGlow = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, coreRadius * 2.2);
+      outerGlow.addColorStop(0, 'rgba(147, 51, 234, 0.35)');
+      outerGlow.addColorStop(0.4, 'rgba(56, 189, 248, 0.18)');
+      outerGlow.addColorStop(1, 'rgba(3, 7, 18, 0)');
+      ctx.fillStyle = outerGlow;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 140, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, coreRadius * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      const innerCore = ctx.createRadialGradient(centerX, centerY, 2, centerX, centerY, coreRadius);
+      innerCore.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      innerCore.addColorStop(0.2, 'rgba(251, 191, 36, 0.75)');
+      innerCore.addColorStop(0.6, 'rgba(236, 72, 153, 0.35)');
+      innerCore.addColorStop(1, 'rgba(126, 34, 206, 0)');
+      ctx.fillStyle = innerCore;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, coreRadius, 0, Math.PI * 2);
       ctx.fill();
 
       // Render orbiting spiral arms
       for (const p of particles) {
-        p.angle += p.speed * 0.012;
-        const currentAngle = p.angle + rotation + p.radius * 0.003;
+        p.angle += p.speed * 0.015;
+        // Logarithmic spiral angle calculation with arm offset
+        const currentAngle = p.angle + rotation + p.arm + (p.radius * 0.0025);
         
-        // Logarithmic spiral offset
         const spiralDist = p.radius;
         const x = centerX + Math.cos(currentAngle) * spiralDist;
-        const y = centerY + Math.sin(currentAngle) * spiralDist * 0.55; // Elliptical perspective tilt
+        const y = centerY + Math.sin(currentAngle) * spiralDist * 0.52; // Elliptical tilt for galaxy perspective
+
+        const distFromCenter = Math.hypot(x - centerX, (y - centerY) * 1.8);
+        const fade = Math.max(0, 1 - distFromCenter / 480);
 
         ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.alpha * (1 - p.radius / 340);
+        ctx.globalAlpha = p.alpha * fade * (0.8 + 0.2 * Math.sin(time + p.radius));
         ctx.beginPath();
-        ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.arc(x, y, p.size * (p.radius < 80 ? pulseFactor : 1), 0, Math.PI * 2);
         ctx.fill();
       }
 

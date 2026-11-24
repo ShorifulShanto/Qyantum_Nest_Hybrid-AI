@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <button
               type="button"
-              onClick={() => onNavigate(profile.id ? '/profile' : '/login')}
+              onClick={() => onNavigate('/profile')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-white transition-all hover:border-[#5DA9FF]/40 whitespace-nowrap shrink-0 cursor-pointer"
             >
               <User className="w-3.5 h-3.5 text-[#5DA9FF]" />

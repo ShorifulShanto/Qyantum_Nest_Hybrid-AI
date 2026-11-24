@@ -8,7 +8,6 @@ export type NavigationRoute =
   | '/habitable-zone'
   | '/earth'
   | '/profile'
-  | '/login'
   | '/journal'
   | '/ai-guide';
 

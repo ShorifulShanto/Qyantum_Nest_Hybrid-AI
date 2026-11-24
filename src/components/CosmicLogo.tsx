@@ -8,27 +8,32 @@ interface CosmicLogoProps {
 export const CosmicLogo: React.FC<CosmicLogoProps> = ({ className = 'w-8 h-8', size = 32 }) => {
   return (
     <div className={`relative flex items-center justify-center shrink-0 group ${className}`} style={{ width: size, height: size }}>
-      {/* Outer ambient glow */}
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-[#5DA9FF] via-[#8B5CF6] to-[#F472B6] opacity-75 blur-md group-hover:opacity-100 transition-opacity animate-pulse" />
+      {/* Outer ambient cosmic glow */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-[#38BDF8] via-[#8B5CF6] to-[#F472B6] opacity-80 blur-md group-hover:opacity-100 transition-opacity animate-pulse" />
 
       {/* Logo Container with Cosmic Gradient Border */}
-      <div className="relative w-full h-full rounded-xl cosmic-gradient p-0.5 flex items-center justify-center shadow-[0_0_20px_rgba(93,169,255,0.5)]">
+      <div className="relative w-full h-full rounded-xl cosmic-gradient p-0.5 flex items-center justify-center shadow-[0_0_20px_rgba(56,189,248,0.5)]">
         <div className="w-full h-full bg-[#050816] rounded-[10px] flex items-center justify-center relative overflow-hidden">
-          {/* Orbital Ring Path */}
-          <div className="absolute inset-1 rounded-lg border border-[#5DA9FF]/40 rotate-45 scale-90 animate-[spin_12s_linear_infinite]" />
-          <div className="absolute inset-1.5 rounded-lg border border-[#8B5CF6]/30 -rotate-12 scale-95 animate-[spin_18s_linear_infinite_reverse]" />
+          {/* Subtle Star Sparkle behind rocket */}
+          <div className="absolute top-1 right-1.5 w-1 h-1 bg-white rounded-full animate-ping" />
 
-          {/* Central 4-point Cosmic Star */}
+          {/* SVG Rocket Ship */}
           <svg
             viewBox="0 0 24 24"
-            className="w-4 h-4 text-white fill-white drop-shadow-[0_0_8px_rgba(93,169,255,0.9)] z-10"
+            className="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(56,189,248,0.9)] transform -rotate-45 group-hover:rotate-0 transition-transform duration-300"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M12 0C12 6.627 17.373 12 24 12C17.373 12 12 17.373 12 24C12 17.373 6.627 12 0 12C6.627 12 12 6.627 12 0Z" />
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+            <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 3-2 3-2" />
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 2-3 2-3" />
+            <circle cx="15" cy="9" r="1" fill="currentColor" />
           </svg>
-
-          {/* Orbiting micro-particle */}
-          <div className="absolute w-1 h-1 rounded-full bg-cyan-300 shadow-[0_0_6px_#38BDF8] animate-[spin_6s_linear_infinite]" style={{ transformOrigin: 'center' }} />
         </div>
       </div>
     </div>

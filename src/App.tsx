@@ -20,7 +20,6 @@ import { ApodPage } from './pages/ApodPage';
 import { HabitableZonePage } from './pages/HabitableZonePage';
 import { EarthPage } from './pages/EarthPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { LoginPage } from './pages/LoginPage';
 import { CosmicJournalPage } from './pages/CosmicJournalPage';
 import { playCosmicPreset, stopCosmicAudio } from './services/synthAudio';
 import {
@@ -72,7 +71,6 @@ export default function App() {
         '/habitable-zone',
         '/earth',
         '/profile',
-        '/login',
         '/journal',
       ];
       return validRoutes.includes(clean as NavigationRoute)
@@ -103,7 +101,6 @@ export default function App() {
       // Increment mission count when visiting a mission route
       if (
         route !== '/' &&
-        route !== '/login' &&
         route !== '/profile' &&
         route !== '/journal' &&
         route !== '/ai-guide'
@@ -311,20 +308,10 @@ export default function App() {
             onBack={handleBack}
           />
         );
-      case '/login':
-        return (
-          <LoginPage
-            onNavigate={navigateTo}
-            onLoginSuccess={(data) => handleUpdateProfile(data)}
-            onBack={handleBack}
-          />
-        );
       default:
         return <HomePage onNavigate={navigateTo} profile={profile} />;
     }
   };
-
-  const isLoginPage = currentRoute === '/login';
 
   return (
     <div className="relative min-h-screen bg-[#050816] text-[#F8FAFC] flex flex-col justify-between selection:bg-[#5DA9FF]/30 selection:text-[#5DA9FF]">
@@ -338,22 +325,20 @@ export default function App() {
         className="hidden"
       />
 
-      {/* Navigation (hidden on dedicated login screen) */}
-      {!isLoginPage && (
-        <Navbar
-          currentRoute={currentRoute}
-          onNavigate={navigateTo}
-          profile={profile}
-        />
-      )}
+      {/* Navigation */}
+      <Navbar
+        currentRoute={currentRoute}
+        onNavigate={navigateTo}
+        profile={profile}
+      />
 
       {/* Primary Page Content */}
       <main className="relative z-10 flex-grow">
         {renderCurrentView()}
       </main>
 
-      {/* Footer (hidden on dedicated login screen) */}
-      {!isLoginPage && <Footer onNavigate={navigateTo} />}
+      {/* Footer */}
+      <Footer onNavigate={navigateTo} />
 
       {/* Persistent Audio Mini-Player Bar */}
       <AudioPlayerBar
